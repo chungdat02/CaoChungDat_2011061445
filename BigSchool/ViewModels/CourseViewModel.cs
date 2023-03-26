@@ -1,4 +1,4 @@
-﻿using BigSchool.Models;
+using BigSchool.Models;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -6,7 +6,7 @@ using System.Linq;
 using System.Web;
 using System.Web.Mvc;
 using System.Globalization;
-namespace LeThanhPhatDat_2011060183.ViewModels
+namespace BigSchool.ViewModels
 {
     public class CourseViewModel : Controller
     {
@@ -21,6 +21,10 @@ namespace LeThanhPhatDat_2011060183.ViewModels
         [Required]
         public byte Category { get; set; }
         public IEnumerable<Category>Categories { get; set; }
+        
+        public IEnumerable<Course> UpcommingCourses { get; set; }
+        public bool ShowAction { get; set; }
+
         public DateTime GetDateTime ()
         {
             

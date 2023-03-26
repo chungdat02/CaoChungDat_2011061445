@@ -1,41 +1,70 @@
-﻿using BigSchool.Models;
+using Bigschool.Models;
+using Bigschool.ViewModels;
 using Microsoft.AspNet.Identity;
-using Microsoft.AspNet.Identity.Owin;
 using System;
 using System.Collections.Generic;
+using System.Data.Entity;
 using System.Linq;
-using System.Security.Cryptography.X509Certificates;
 using System.Web;
 using System.Web.Mvc;
 
-namespace BigSchool.Controllers
+namespace Bigschool.Controllers
 {
     public class CoursesController : Controller
     {
+        private readonly ApplicationDbContext _dbContext;
+        public CoursesController()
+        {
+            _dbContext = new ApplicationDbContext();
+        }
         // GET: Courses
+        [Authorize]
         public ActionResult Create()
         {
-            //get list category 
-            BigSchoolContext context = new BigSchoolContext();
-            Course objCourse = new Course();
-            objCourse.ListCategory = context.Categories.ToList();
-            return View(objCourse);
+            var viewModel = new CourseViewModel
+            {
+                Categories = _dbContext.Categories.ToList()
+            };
+            return View(viewModel);
+        }
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult Create(CourseViewModel viewModel)
+        {
+            if (!ModelState.IsValid)
+            {
+                viewModel.Categories= _dbContext.Categories.ToList();
+                return View("Create",viewModel);
+            }
+            var course = new Course
+            {
+                LecturerId = User.Identity.GetUserId(),
+                DateTime = viewModel.GetDateTime(),
+                CategoryId = viewModel.Category,
+                Place = viewModel.Place,
+            };
+            _dbContext.Course.Add(course);
+            _dbContext.SaveChanges();
+            return RedirectToAction("Index","Home");
         }
         [Authorize]
-        [HttpPost]
-        public ActionResult Create(Course objCourse)
+        public ActionResult Attending()
         {
-            BigSchoolContext context = new BigSchoolContext();
-            //Lay login user id 
-            ApplicationUser user = System.Web.HttpContext.Current.GetOwinContext().GetUserManager<ApplicationUserManager>().FindById(System.Web.HttpContext.Current.User.Identity.GetUserId());
-            objCourse.LecturerId = user.Id;
-
-            //add vao csdl
-            context.Courses.Add(objCourse);
-            context.SaveChanges();
-
-            // tro ve home
-            return RedirectToAction("index", "Home");
+            var userId = User.Identity.GetUserId();
+            var courses = _dbContext.Attendances
+                .Where(a => a.AttendeeId == userId)
+                .Select(a => a.Course)
+                .Include(l => l.Lecturer)
+                .Include(l => l.Category)
+                .ToList();
+            var viewModel = new CourseViewModel
+            {
+                UpcommingCourses = courses,
+                ShowAction = User.Identity.IsAuthenticated
+            };
+            return View(viewModel);
         }
+        
+        
     }
 }
